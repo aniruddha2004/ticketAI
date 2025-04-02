@@ -1,0 +1,46 @@
+{% extends 'base.html' %} {% block content %}
+<div class="chat-container">
+  <div class="ticket-sidebar">
+    <h2>Your Tickets</h2>
+    <button id="new-chat-btn" class="btn btn-primary btn-block mb-3">
+      <i class="fas fa-plus"></i> New Chat
+    </button>
+
+    <div class="ticket-list-container">
+      <ul id="ticket-list" class="ticket-list">
+        {% for ticket in user_tickets %}
+        <li class="ticket-item" data-id="{{ ticket.id }}">
+          <div class="ticket-title">{{ ticket.title }}</div>
+          <div class="ticket-meta">
+            #{{ ticket.id }} · {{ ticket.status }} · {{
+            ticket.created_at.strftime('%Y-%m-%d') }}
+          </div>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <div class="chat-main">
+    <div id="chat-messages" class="chat-messages">
+      <!-- Messages will be added dynamically via JavaScript -->
+    </div>
+
+    <div class="chat-input">
+      <form id="chat-form" class="chat-form">
+        <input
+          type="text"
+          id="message-input"
+          placeholder="Type your message here..."
+          autocomplete="off"
+        />
+        <button type="submit">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}
