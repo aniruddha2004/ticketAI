@@ -1,11 +1,12 @@
 import json
+from bson import ObjectId
 from flask import render_template, request, redirect, url_for, flash, jsonify, session
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash
 from app import app, mongo
 from models import User, Ticket, UserRole, TicketStatus
 # from models import Message
-from utils import generate_ticket_summary, get_category, get_priority, get_potential_cause
+from utils import generate_ticket_summary, get_category, get_priority, get_potential_cause, get_title
 from datetime import datetime
 # from bson.objectid import ObjectId
 
@@ -65,7 +66,7 @@ def register():
         counter += 1
     
     # Create and save the user
-    user = User(username=username, email=email, role=UserRole.USER.value, category=None)
+    user = User(username=username, email=email, role=UserRole.USER.value, category="None", assignedTickets=0)
     user.set_password(password)
     user.save()
     
@@ -172,29 +173,65 @@ def update_ticket_status(ticket_id):
     ticket.updated_at = datetime.utcnow()
     ticket.save()
     
+    # If the assignee is closing the ticket, decrease his assignedTickets count by 1
+    if new_status == TicketStatus.CLOSED.value and ticket.assignee_id == current_user.id:
+        mongo.db.Users.update_one(
+            {"_id": ObjectId(current_user.id)},
+            {"$inc": {"assignedTickets": -1}}
+        )
     
     return jsonify({'success': True, 'status': new_status})
 
-@app.route('/api/tickets/<ticket_id>/assign', methods=['PUT'])
+
+from bson.objectid import ObjectId
+from datetime import datetime
+
+@app.route('/api/tickets/<ticket_id>/reassign', methods=['PUT'])
 @login_required
-def assign_ticket(ticket_id):
-    if not current_user.is_professional():
-        return jsonify({'error': 'Access denied'}), 403
-    
+def reassign_ticket(ticket_id):
     ticket = Ticket.get_by_id(ticket_id)
     if not ticket:
         return jsonify({'error': 'Ticket not found'}), 404
-        
-    ticket.assignee_id = current_user.id
-    
-    # Update status if it's still open
-    if ticket.status == TicketStatus.OPEN.value:
-        ticket.status = TicketStatus.IN_PROGRESS.value
-    
+
+    new_assignee_id = request.json.get('assignee_id')
+    if not new_assignee_id:
+        return jsonify({'error': 'New assignee id is required'}), 400
+
+    # Validate that the new assignee exists and is a professional
+    new_assignee = mongo.db.Users.find_one({
+        "_id": ObjectId(new_assignee_id),
+        "role": UserRole.PROFESSIONAL.value
+    })
+    if not new_assignee:
+        return jsonify({'error': 'New assignee not found or not a professional'}), 404
+
+    old_assignee_id = ticket.assignee_id
+
+    # Decrement assignedTickets for the current assignee if there is one and it differs from the new assignee
+    if old_assignee_id and old_assignee_id != new_assignee_id:
+        mongo.db.Users.update_one(
+            {"_id": ObjectId(old_assignee_id)},
+            {"$inc": {"assignedTickets": -1}}
+        )
+
+    # Increment assignedTickets for the new assignee if it differs from the old one
+    if old_assignee_id != new_assignee_id:
+        mongo.db.Users.update_one(
+            {"_id": ObjectId(new_assignee_id)},
+            {"$inc": {"assignedTickets": 1}}
+        )
+
+    # Update the ticket's assignee and timestamp
+    ticket.assignee_id = new_assignee_id
+    ticket.updated_at = datetime.utcnow()
     ticket.save()
 
-    
-    return jsonify({'success': True})
+    return jsonify({
+        'success': True,
+        'ticket_id': ticket.id,
+        'new_assignee_id': new_assignee_id
+    })
+
 
 @app.route('/api/chat/start', methods=['GET'])
 @login_required
@@ -252,25 +289,42 @@ def create_ticket():
     
     # Create a ticket with the information gathered
     category = get_category(summary)
+    title = get_title(summary)
     priority = get_priority(summary, category)
     
     user_log_doc = mongo.db.Logs.find_one({"user_id": current_user.id})
     log_data = user_log_doc.get("logs", []) if user_log_doc else []
     cause = get_potential_cause(summary, category, json.dumps(log_data, indent=2))
     
-    print(f"\n\n\n\n{log_data}\n\n\n\n")
+    # New functionality: determine the assignee based on the category
+    assignee_id = None
+    professionals = list(mongo.db.Users.find({
+        "role": UserRole.PROFESSIONAL.value,
+        "category": category
+    }))
+    
+    if professionals:
+        # Find the professional with the lowest assignedTickets value.
+        # If all professionals have the same value, min() will return the first one.
+        selected_professional = min(professionals, key=lambda prof: prof.get("assignedTickets", 0))
+        assignee_id = str(selected_professional["_id"])
+        # Increment the professional's assignedTickets count by 1
+        mongo.db.Users.update_one(
+            {"_id": selected_professional["_id"]},
+            {"$inc": {"assignedTickets": 1}}
+        )
     
     ticket = Ticket(
-        title=summary.split('\n')[0] if '\n' in summary else summary[:100],
+        title=title,
         description=summary,
         cause=cause,
         category=category,
         priority=priority,
         creator_id=current_user.id,
+        assignee_id=assignee_id,  # New field to store the assignee's id
         status=TicketStatus.OPEN.value
     )
     
-    print(f"\n\n\n\n{ticket.title}\n\n\n\n")
     ticket.save()
     
     # Clear the chat session
@@ -282,6 +336,7 @@ def create_ticket():
         'ticket_id': ticket.id,
         'message': f"Ticket #{ticket.id} has been created successfully."
     })
+
 
 # @app.route('/api/tickets/<ticket_id>/reply', methods=['POST'])
 # @login_required

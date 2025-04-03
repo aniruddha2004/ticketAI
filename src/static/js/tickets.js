@@ -167,18 +167,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         
                         <div class="ticket-actions mt-3">
-                            <button id="assign-btn" class="btn btn-primary mr-2">
-                                ${data.assignee ? 'Reassign to Me' : 'Assign to Me'}
-                            </button>
-                            
                             <div class="status-dropdown d-inline-block">
-                                <select id="status-select" class="form-control form-control-sm d-inline-block" style="width: auto;">
+                                <select id="status-select" class="form-control form-control-sm d-inline-block custom-select" style="width: auto; color: white;">
                                     <option value="open" ${data.status === 'open' ? 'selected' : ''}>Open</option>
                                     <option value="in_progress" ${data.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
                                     <option value="resolved" ${data.status === 'resolved' ? 'selected' : ''}>Resolved</option>
                                     <option value="closed" ${data.status === 'closed' ? 'selected' : ''}>Closed</option>
                                 </select>
-                                <button id="update-status-btn" class="btn btn-sm btn-secondary">Update Status</button>
+                                <button id="update-status-btn" class="btn btn-secondary">Update Status</button>
                             </div>
                         </div>
                     </div>
@@ -214,9 +210,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     updateTicketStatus(ticketId, document.getElementById('status-select').value);
                 });
                 
-                document.getElementById('assign-btn').addEventListener('click', function() {
-                    assignTicket(ticketId);
-                });
+                // document.getElementById('assign-btn').addEventListener('click', function() {
+                //     assignTicket(ticketId);
+                // });
             })
             .catch(error => {
                 console.error('Error loading ticket details:', error);

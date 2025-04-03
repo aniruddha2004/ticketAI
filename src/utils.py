@@ -41,6 +41,26 @@ def generate_ticket_summary(chat_responses):
     
     return summary
 
+def get_title(summary):
+    
+    sysTemplate = "You are given the summary for an user's issue, now you need to determine a brief, to the point title for the issue. Your response should contain only the title, no other text should be present."
+
+    promptTemplate = ChatPromptTemplate.from_messages([
+    ("system", sysTemplate),
+    ("human", "Here is the summary : '{summary}'")
+    ])
+    
+    
+    getPrompt = RunnableLambda(lambda x : promptTemplate.invoke(x))
+    callModel = RunnableLambda(lambda x : model.invoke(x))
+    getResult = RunnableLambda(lambda x : x.content)
+    
+    chain = getPrompt | callModel | getResult
+    
+    title = chain.invoke({"summary" : summary})
+    
+    return title
+
 def get_category(summary):
     
     sysTemplate = "You are given the summary for an user's issue, now you need to determine the category of the issue. Here are the available categories : Payments, Transfers, Accounts, Security, Refunds. Choose the category, and your response should contain only one word, that is the category."

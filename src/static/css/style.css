@@ -91,6 +91,7 @@ a:hover {
 
 .form-control:focus {
     border-color: var(--primary-color);
+    color: var(--text-light) !important;
     outline: none;
     background-color: #454560;
 }
@@ -592,6 +593,17 @@ ul {
 .modal-body {
     margin-bottom: 1.5rem;
 }
+
+.custom-select {
+    appearance: none;          /* Standard */
+    -webkit-appearance: none;  /* Chrome, Safari, Opera */
+    -moz-appearance: none;     /* Firefox */
+    background: url("data:image/svg+xml;charset=UTF-8,%3Csvg width='10' height='10' viewBox='0 0 10 10' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolygon points='0,0 10,0 5,5' fill='white'/%3E%3C/svg%3E") no-repeat right 10px center;
+    background-size: 10px;
+    /* Optional: add padding so that the text doesn't overlap the custom arrow */
+    padding-right: 30px;
+    color: white; /* Text color */
+  }
 
 .ticket-details p {
     margin-bottom: 0.75rem;

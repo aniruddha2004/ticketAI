@@ -15,13 +15,14 @@ class TicketStatus(Enum):
     CLOSED = 'closed'
 
 class User(UserMixin):
-    def __init__(self, username, email, password_hash=None, role=UserRole.USER.value, category=None, _id=None):
+    def __init__(self, username, email, password_hash=None, role=UserRole.USER.value, category="None", _id=None, assignedTickets=0):
         self.username = username
         self.email = email
         self.password_hash = password_hash
         self.role = role
         self.category = category
         self._id = _id  # Store the provided _id, or None if not provided
+        self.assignedTickets = assignedTickets
 
     @property
     def id(self):
@@ -47,7 +48,8 @@ class User(UserMixin):
                 password_hash=user_data.get('password_hash'),
                 role=user_data.get('role'),
                 category=user_data.get('category'),
-                _id=user_data.get('_id')
+                _id=user_data.get('_id'),
+                assignedTickets=user_data.get('assignedTickets')
             )
         return None
     
@@ -62,7 +64,8 @@ class User(UserMixin):
                 password_hash=user_data.get('password_hash'),
                 role=user_data.get('role'),
                 category=user_data.get('category'),
-                _id=user_data.get('_id')
+                _id=user_data.get('_id'),
+                assignedTickets=user_data.get('assignedTickets')
             )
         return None
     
@@ -77,7 +80,8 @@ class User(UserMixin):
                 password_hash=user_data.get('password_hash'),
                 role=user_data.get('role'),
                 category=user_data.get('category'),
-                _id=user_data.get('_id')
+                _id=user_data.get('_id'),
+                assignedTickets=user_data.get('assignedTickets')
             )
         return None
     
@@ -91,7 +95,8 @@ class User(UserMixin):
             "email": self.email,
             "password_hash": self.password_hash,
             "role": self.role,
-            "category": self.category
+            "category": self.category,
+            "assignedTickets": self.assignedTickets
         }
         
         print("\n\n\n\nSave Functionn\n\n\n\n")
