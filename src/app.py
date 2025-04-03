@@ -3,16 +3,19 @@ import logging
 from flask import Flask
 from flask_login import LoginManager
 from flask_pymongo import PyMongo
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
 
 # Create the Flask application
 app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET", "dev-secret-key")
+app.secret_key = os.environ.get("SESSION_SECRET")
 
 # Configure MongoDB
-app.config["MONGO_URI"] = "mongodb://localhost:27017/ticketApp"
+app.config["MONGO_URI"] = os.environ.get("MONGO_DB_URI")
 print(f"\n\n\n\n\n{app.config['MONGO_URI']}\n\n\n\n\n")
 mongo = PyMongo(app)
 
